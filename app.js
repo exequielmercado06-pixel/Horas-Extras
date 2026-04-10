@@ -1,125 +1,204 @@
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener("DOMContentLoaded", function(){
 
-  const calendarEl = document.getElementById('calendar');
+let eventos = JSON.parse(localStorage.getItem("eventos")) || [];
 
-  // 🔁 Cargar datos guardados
-  let eventos = JSON.parse(localStorage.getItem("eventos")) || [];
+let fechaSeleccionada = null;
 
-  const calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
-    locale: 'es',
+const calendar = new FullCalendar.Calendar(document.getElementById("calendar"),{
 
-    dateClick: function(info) {
-      const fecha = info.dateStr;
+initialView:"dayGridMonth",
+locale:"es",
 
-      const salida = prompt("Hora de salida (HH:MM):");
-      const motivo = prompt("Motivo:");
+dateClick:function(info){
 
-      if (!salida) return;
+fechaSeleccionada = info.dateStr;
 
-      calcularHorasExtra(fecha, salida, motivo);
-    },
+document.getElementById("modal").style.display="flex";
 
-    eventContent: function(arg) {
-      return { html: arg.event.title };
-    }
+},
 
-  });
+datesSet:function(){
 
-  calendar.render();
+actualizarTotal();
 
-document.getElementById("borrar").addEventListener("click", function() {
+},
 
-  const confirmar = confirm("¿Seguro que querés borrar todos los datos?");
+eventContent:function(arg){
 
-  if (!confirmar) return;
+return{html:arg.event.title};
 
-  // 🧹 Vaciar array
-  eventos = [];
+}
 
-  // 🗑 Borrar localStorage
-  localStorage.removeItem("eventos");
-
-  // 🗓 Limpiar calendario
-  calendar.getEvents().forEach(e => e.remove());
-
-  // 🔄 Resetear total
-  actualizarTotal();
 });
 
-  // 🔁 Mostrar eventos guardados al iniciar
-  eventos.forEach(e => {
-    calendar.addEvent({
-      title: e.texto,
-      start: e.fecha
-    });
-  });
+calendar.render();
 
-  actualizarTotal();
+eventos.forEach(e=>{
 
+calendar.addEvent({
+title:e.texto,
+start:e.fecha
+});
 
-  function convertirAMinutos(hora) {
-    const partes = hora.split(":");
-    return parseInt(partes[0]) * 60 + parseInt(partes[1]);
-  }
+});
 
+function convertirAMinutos(h){
 
-  function calcularHorasExtra(fecha, salidaReal, motivo) {
+const partes = h.split(":");
 
-    const salidaMin = convertirAMinutos(salidaReal);
+return partes[0]*60 + parseInt(partes[1]);
 
-    const inicioCorte = convertirAMinutos("12:15");
-    const finCorte = convertirAMinutos("15:30");
-    const salidaNormal = convertirAMinutos("19:30");
+}
 
-    let extraMinutos = 0;
+function calcularExtra(salida){
 
-    if (salidaMin > inicioCorte && salidaMin < finCorte) {
-      extraMinutos = salidaMin - inicioCorte;
-    } else if (salidaMin > salidaNormal) {
-      extraMinutos = salidaMin - salidaNormal;
-    }
+const salidaMin = convertirAMinutos(salida);
 
-    if (extraMinutos <= 0) return;
+const corteInicio = convertirAMinutos("12:15");
+const corteFin = convertirAMinutos("15:30");
+const salidaNormal = convertirAMinutos("19:30");
 
-    const horas = Math.floor(extraMinutos / 60);
-    const minutos = extraMinutos % 60;
+let extra = 0;
 
-    const texto = "<b>+" + horas + "h " + minutos + "m</b><br><small>" + motivo + "</small>";
+if(salidaMin>corteInicio && salidaMin<corteFin){
 
-    guardarEvento(fecha, texto, motivo, extraMinutos);
-  }
+extra = salidaMin - corteInicio;
 
+}
 
-  function guardarEvento(fecha, texto, motivo, minutos) {
+else if(salidaMin>salidaNormal){
 
-    const nuevoEvento = { fecha, texto, motivo, minutos };
+extra = salidaMin - salidaNormal;
 
-    eventos.push(nuevoEvento);
+}
 
-    // 💾 GUARDAR EN LOCALSTORAGE
-    localStorage.setItem("eventos", JSON.stringify(eventos));
+return extra;
 
-    calendar.addEvent({
-      title: texto,
-      start: fecha
-    });
+}
 
-    actualizarTotal();
-  }
+document.getElementById("guardar").onclick=function(){
 
+const salida = document.getElementById("horaSalida").value;
+const motivo = document.getElementById("motivo").value;
 
-  function actualizarTotal() {
+if(!salida) return;
 
-    let totalMin = 0;
+const extraMin = calcularExtra(salida);
 
-    eventos.forEach(e => totalMin += e.minutos);
+if(extraMin<=0){
 
-    const horas = Math.floor(totalMin / 60);
-    const minutos = totalMin % 60;
+cerrarModal();
+return;
 
-    document.getElementById("total").innerText =
-      "Horas extra del mes: " + horas + "h " + minutos + "m";
-  }
+}
+
+const h = Math.floor(extraMin/60);
+const m = extraMin%60;
+
+const texto =
+"<small>"+salida+"</small><br>"+
+"<b>+"+h+"h "+m+"m</b><br>"+
+"<small>"+motivo+"</small>";
+
+const evento={
+
+fecha:fechaSeleccionada,
+texto:texto,
+minutos:extraMin
+
+};
+
+eventos.push(evento);
+
+localStorage.setItem("eventos",JSON.stringify(eventos));
+
+calendar.addEvent({
+
+title:texto,
+start:fechaSeleccionada
+
+});
+
+actualizarTotal();
+
+cerrarModal();
+
+};
+
+function actualizarTotal(){
+
+const fechaCalendario = calendar.getDate();
+
+const mes = fechaCalendario.getMonth();
+const anio = fechaCalendario.getFullYear();
+
+let total=0;
+
+eventos.forEach(e=>{
+
+const f = new Date(e.fecha);
+
+if(f.getMonth()===mes && f.getFullYear()===anio){
+
+total+=e.minutos;
+
+}
+
+});
+
+const h=Math.floor(total/60);
+const m=total%60;
+
+document.getElementById("total").innerText=
+"Horas extra del mes: "+h+"h "+m+"m";
+
+}
+
+document.getElementById("cancelar").onclick=cerrarModal;
+
+function cerrarModal(){
+
+document.getElementById("modal").style.display="none";
+
+document.getElementById("horaSalida").value="";
+document.getElementById("motivo").value="";
+
+}
+
+document.getElementById("borrar").onclick=function(){
+
+const confirmar = confirm("¿Borrar horas de este mes?");
+if(!confirmar) return;
+
+const fechaCalendario = calendar.getDate();
+const mes = fechaCalendario.getMonth();
+const anio = fechaCalendario.getFullYear();
+
+eventos = eventos.filter(e=>{
+
+const f=new Date(e.fecha);
+
+return !(f.getMonth()===mes && f.getFullYear()===anio);
+
+});
+
+localStorage.setItem("eventos",JSON.stringify(eventos));
+
+calendar.getEvents().forEach(e=>e.remove());
+
+eventos.forEach(e=>{
+
+calendar.addEvent({
+
+title:e.texto,
+start:e.fecha
+
+});
+
+});
+
+actualizarTotal();
+
+};
 
 });
