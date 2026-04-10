@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Horas Extra</title>
+
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<h2>Registro de Horas Extra</h2>
+
+<div id="calendar"></div>
+
+<div class="panel">
+
+<p id="total">Horas extra del mes: 0h 0m</p>
+
+<button id="borrar">Borrar horas del mes</button>
+
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="modal">
+
+  <div class="modal-content">
+
+    <h3>Cargar hora extra</h3>
+
+    <label>Hora de salida</label>
+    <input type="time" id="horaSalida">
+
+    <label>Motivo</label>
+    <input type="text" id="motivo">
+
+    <div class="botones">
+      <button id="guardar">Guardar</button>
+      <button id="cancelar">Cancelar</button>
+    </div>
+
+  </div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
